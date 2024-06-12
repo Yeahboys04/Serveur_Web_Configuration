@@ -1,3 +1,6 @@
+import java.io.*;
+import java.net.Socket;
+
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
     private ConfigLoader config;
