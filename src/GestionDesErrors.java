@@ -3,15 +3,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-public class AccessLogger {
-    private String accessLogPath;
+public class GestionDesErrors {
+    private String errorLogPath;
 
-    public AccessLogger(String accessLogPath) {
-        this.accessLogPath = accessLogPath;
+    public GestionDesErrors(String errorLogPath) {
+        this.errorLogPath = errorLogPath;
     }
 
-    public void logAccess(String message) {
-        try (FileWriter fw = new FileWriter(accessLogPath, true);
+    public void logError(String message) {
+        try (FileWriter fw = new FileWriter(errorLogPath, true);
              BufferedWriter bw = new BufferedWriter(fw);
              PrintWriter out = new PrintWriter(bw)) {
             out.println(message);

@@ -4,31 +4,30 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.net.*;
-import java.nio.file.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class HttpServer {
     private ServerSocket serverSocket;
-    private String rootDirectory;
-    private AccessLogger accessLogger;
-    private ErrorLogger errorLogger;
-    private RequestHandler requestHandler;
+    private String cheminVersConfig;
+    private GestionDesAccess access;
+    private GestionDesErrors error;
+    private DemandeConnection demande;
 
-    public HttpServer(int port, String rootDirectory, String accessLogPath, String errorLogPath, List<String> acceptedIPs, List<String> rejectedIPs) throws IOException {
+    public HttpServer(int port, String CheminVersConfig, String CheminEcritureLogAccess, String CHeminEcritureLogErrors, List<String> IpAccepter, List<String> IpRefuser) throws IOException {
         this.serverSocket = new ServerSocket(port);
-        this.rootDirectory = rootDirectory;
-        this.accessLogger = new AccessLogger(accessLogPath);
-        this.errorLogger = new ErrorLogger(errorLogPath);
-        this.requestHandler = new RequestHandler(rootDirectory, acceptedIPs, rejectedIPs);
+        this.cheminVersConfig = CheminVersConfig;
+        this.access = new GestionDesAccess(CheminEcritureLogAccess);
+        this.error = new GestionDesErrors(CHeminEcritureLogErrors);
+        this.demande = new DemandeConnection(CheminVersConfig, IpAccepter, IpRefuser);
     }
 
     public void start() {
         while (true) {
             try {
                 Socket clientSocket = serverSocket.accept();
-                requestHandler.handleRequest(clientSocket, accessLogger, errorLogger);
+                demande.handleRequest(clientSocket, access, error);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -37,25 +36,27 @@ public class HttpServer {
 
     public static void main(String[] args) {
         try {
-            // Load configuration from XML file
+            // Chargement du fichier de config
             File xmlFile = new File("config/myweb.conf");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(xmlFile);
             doc.getDocumentElement().normalize();
 
-            // Read configuration values
+            // Lire les valeurs de configuration
             int port = Integer.parseInt(doc.getElementsByTagName("port").item(0).getTextContent());
-            String rootDir = doc.getElementsByTagName("root").item(0).getTextContent();
-            String accessLogPath = doc.getElementsByTagName("accesslog").item(0).getTextContent();
-            String errorLogPath = doc.getElementsByTagName("errorlog").item(0).getTextContent();
-            List<String> acceptedIPs = Stream.of(doc.getElementsByTagName("accept").item(0).getTextContent().split(","))
+            String cheminFichierConf = doc.getElementsByTagName("root").item(0).getTextContent();
+            String cheminAccesLog = doc.getElementsByTagName("accesslog").item(0).getTextContent();
+            String cheminErrorLog = doc.getElementsByTagName("errorlog").item(0).getTextContent();
+            //La liste des Ip accepter et rejeter doit etre de la forme <accept>Ip,Ip,...</accept> dans le fichier conf
+            List<String> IpAccepter = Stream.of(doc.getElementsByTagName("accept").item(0).getTextContent().split(","))
                     .collect(Collectors.toList());
-            List<String> rejectedIPs = Stream.of(doc.getElementsByTagName("reject").item(0).getTextContent().split(","))
+            //Meme chose pour les rejeter
+            List<String> IpRejeter = Stream.of(doc.getElementsByTagName("reject").item(0).getTextContent().split(","))
                     .collect(Collectors.toList());
 
-            // Initialize server
-            HttpServer server = new HttpServer(port, rootDir, accessLogPath, errorLogPath, acceptedIPs, rejectedIPs);
+            // Initialisation du serveur
+            HttpServer server = new HttpServer(port, cheminFichierConf, cheminAccesLog, cheminErrorLog, IpAccepter, IpRejeter);
             server.start();
         } catch (Exception e) {
             e.printStackTrace();
