@@ -1,7 +1,11 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,7 +69,11 @@ public class DemandeConnection {
                             contentType = "text/html";
                         }
                         boolean isBase64 = estFichierBinaire(contentType);
-                        envoyerReponse(clientSocket, contentType, content, isBase64);
+                        if (isBase64) {
+                            envoyerReponseBase64(clientSocket, contentType, content);
+                        } else {
+                            envoyerReponseTexte(clientSocket, contentType, cheminFichier);
+                        }
                     } else {
                         String messageErreur = "HTTP/1.1 404 Not Found\r\n\r\n";
                         envoyerBytes(clientSocket, messageErreur.getBytes());
@@ -98,22 +106,78 @@ public class DemandeConnection {
         return contentType.startsWith("images/") || contentType.startsWith("audio/") || contentType.startsWith("videos/");
     }
 
-    private void envoyerReponse(Socket clientSocket, String contentType, byte[] content, boolean isBase64) throws IOException {
-        if (isBase64) {
-            String base64Content = Base64.getEncoder().encodeToString(content);
-            String responseHeaders = "HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: " + contentType + "\r\n" +
-                    "Content-Encoding: base64\r\n" +
-                    "Content-Length: " + base64Content.length() + "\r\n\r\n";
-            envoyerBytes(clientSocket, responseHeaders.getBytes());
-            envoyerBytes(clientSocket, base64Content.getBytes());
-        } else {
-            String responseHeaders = "HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: " + contentType + "\r\n" +
-                    "Content-Length: " + content.length + "\r\n\r\n";
-            envoyerBytes(clientSocket, responseHeaders.getBytes());
-            envoyerBytes(clientSocket, content);
+    private void envoyerReponseBase64(Socket clientSocket, String contentType, byte[] content) throws IOException {
+        String base64Content = Base64.getEncoder().encodeToString(content);
+        String responseHeaders = "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: " + contentType + "\r\n" +
+                "Content-Encoding: base64\r\n" +
+                "Content-Length: " + base64Content.length() + "\r\n\r\n";
+        envoyerBytes(clientSocket, responseHeaders.getBytes());
+        envoyerBytes(clientSocket, base64Content.getBytes());
+    }
+
+    private void envoyerReponseTexte(Socket clientSocket, String contentType, String cheminFichier) throws IOException {
+        FileReader fr = new FileReader(cheminFichier);
+        BufferedReader fichier = new BufferedReader(fr);
+        String ligne = fichier.readLine();
+        String codeHtml = "";
+        while (ligne != null) {
+            if (ligne.contains("<code")) {
+                boolean debutInterpreteur = false;
+                String interpreteur = "";
+                for (int i = 0; i < ligne.length(); i++) {
+                    if (ligne.charAt(i) == '\"') {
+                        debutInterpreteur = !debutInterpreteur;
+                    } else if (debutInterpreteur) {
+                        interpreteur += ligne.charAt(i);
+                    }
+                }
+                String code = "\"";
+                ligne = fichier.readLine();
+                while (!ligne.contains("</code>")) {
+                    code += ligne;
+                    ligne = fichier.readLine();
+                }
+                code += "\"";
+                ProcessBuilder processBuilder = new ProcessBuilder();
+                processBuilder.command(interpreteur, "-c", code);
+                try {
+                    Process process = processBuilder.start();
+                    process.waitFor();
+                    StringBuilder output = new StringBuilder();
+
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(process.getInputStream()));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line + "\n");
+                    }
+                    reader.close();
+
+                    int exitVal = process.waitFor();
+                    if (exitVal == 0) {
+                        codeHtml += output + " ";
+                        System.out.println("output : " + output);
+                    } else {
+                        System.out.println("échec");
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                codeHtml += ligne + " ";
+            }
+            ligne = fichier.readLine();
         }
+        fichier.close();
+        Path path = Paths.get(cheminFichier);
+        byte[] content = Files.readAllBytes(path);
+        String responseHeaders = "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: " + contentType + "\r\n" +
+                "Content-Length: " + content.length + "\r\n\r\n";
+        envoyerBytes(clientSocket, responseHeaders.getBytes());
+        envoyerBytes(clientSocket, codeHtml.getBytes());
     }
 
     private void envoyerBytes(Socket clientSocket, byte[] bytes) throws IOException {
