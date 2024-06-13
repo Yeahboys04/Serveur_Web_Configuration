@@ -21,42 +21,10 @@ public class DemandeConnection {
 
     public void handleRequest(Socket clientSocket, GestionDesAccess access, GestionDesErrors erreurs) throws IOException {
         ProcessBuilder processBuilder = new ProcessBuilder();
-
-        // -- Linux --
-
-        // Run a shell command
         processBuilder.command("bash", "-c", "./var/www/status.sh");
-
-        // Run a shell script
-        //processBuilder.command("path/to/hello.sh");
-
-        // -- Windows --
-
-        // Run a command
-        //processBuilder.command("cmd.exe", "/c", "dir C:\\Users\\mkyong");
-
-        // Run a bat file
-        //processBuilder.command("C:\\Users\\mkyong\\hello.bat");
-
         try {
-
             Process process = processBuilder.start();
-
-            StringBuilder output = new StringBuilder();
-
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line + "\n");
-            }
-
-            int exitVal = process.waitFor();
-            if (exitVal == 0) {
-                System.out.println("Success!");
-                System.out.println(output);
-            }
+            process.waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
