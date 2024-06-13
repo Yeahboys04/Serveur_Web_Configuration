@@ -45,6 +45,9 @@ public class DemandeConnection {
                 String[] requestParts = separationRequette(requette);
                 if ("GET".equals(requestParts[0])) {
                     String cheminFichier = CheminDaccess + requestParts[1];
+                   if(requestParts[1].equals("/")){
+                       cheminFichier = CheminDaccess+"/index.html";
+                   }
                     Path path = Paths.get(cheminFichier);
                     if (Files.exists(path)) {
                         byte[] content = Files.readAllBytes(path);
@@ -54,10 +57,12 @@ public class DemandeConnection {
                         }
                         envoyerReponse(clientSocket, contentType, content);
                     } else {
-                        String MessageDerreur = "HTTP/1.1 404 Pas Trouve\r\n\r\n";
-                        envoyerBytes(clientSocket, MessageDerreur.getBytes());
-                        erreurs.logError("Fichier pas trouvé : " + cheminFichier);
-                        System.out.println("Fichier pas trouvé");
+
+                            String MessageDerreur = "HTTP/1.1 404 Pas Trouve\r\n\r\n";
+                            envoyerBytes(clientSocket, MessageDerreur.getBytes());
+                            erreurs.logError("Fichier pas trouvé : " + cheminFichier);
+                            System.out.println("Fichier pas trouvé");
+
                     }
                 }
             }
