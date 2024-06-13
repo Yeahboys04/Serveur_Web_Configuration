@@ -37,19 +37,37 @@ public class DemandeConnection {
             // On récupère l'adresse IP du client
             String clientIP = clientSocket.getInetAddress().getHostAddress();
             // On teste si l'IP est dans la liste des refusées
-            if (ipRefuser.contains(clientIP)) {
+            boolean arret = false;
+            int i= 0;
+            while(!arret && i!=ipAccepter.size()){
+                String adresseReseau = ipAccepter.get(i).split("/")[0];
+                int masque = Integer.parseInt(ipAccepter.get(i).split("/")[1]);
+                if(VerificateurAdresseIP.estDansReseau(clientIP,adresseReseau,masque)){
+                    arret = true;
+                }
+                i++;
+            }
+            if (!arret) {
                 // Si c'est le cas, on écrit dans le fichier de log des erreurs
-                erreurs.logError("Connexion refusée de l'IP : " + clientIP);
+                boolean stop = false;
+                int j = 0 ;
+                while(!stop && j!=ipRefuser.size()){
+                    String adress = ipRefuser.get(j).split("/")[0];
+                    int masque = Integer.parseInt(ipRefuser.get(j).split("/")[1]);
+                    if(VerificateurAdresseIP.estDansReseau(clientIP,adress,masque)){
+                        erreurs.logError("Connexion refusée de l'IP : " + clientIP);
+                        stop = true;
+                    }
+                    j++;
+                }
+                if(!stop){
+                    erreurs.logError("Connexion non accepté : " + clientIP);
+                }
+
                 clientSocket.close();
                 return;
             }
             // On teste si l'IP est dans la liste des acceptées
-            if (!ipAccepter.contains(clientIP)) {
-                // Si ce n'est pas le cas
-                erreurs.logError("Connexion non acceptée de : " + clientIP);
-                clientSocket.close();
-                return;
-            }
 
             String requete = lireRequete(clientSocket);
             if (requete != null) {
