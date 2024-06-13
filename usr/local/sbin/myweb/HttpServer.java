@@ -3,6 +3,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +34,15 @@ public class HttpServer {
         }
     }
 
+    public static List<String> genererListIP(String a){
+        String [] r = a.split(",");
+        List<String> s = new ArrayList<String>();
+        for(int i = 0 ;i<r.length;i++){
+               s.add(r[i]);
+         }
+        return s;
+    }
+
     public static void main(String[] args) {
         try {
             // Chargement du fichier de configuration
@@ -48,10 +58,8 @@ public class HttpServer {
             String cheminAccesLog = doc.getElementsByTagName("accesslog").item(0).getTextContent();
             String cheminErrorLog = doc.getElementsByTagName("errorlog").item(0).getTextContent();
             // La liste des IP acceptées et rejetées
-            List<String> ipAccepter = Stream.of(doc.getElementsByTagName("accept").item(0).getTextContent().split(","))
-                    .collect(Collectors.toList());
-            List<String> ipRejeter = Stream.of(doc.getElementsByTagName("reject").item(0).getTextContent().split(","))
-                    .collect(Collectors.toList());
+            List<String> ipAccepter = genererListIP(doc.getElementsByTagName("accept").item(0).getTextContent());
+            List<String> ipRejeter = genererListIP(doc.getElementsByTagName("reject").item(0).getTextContent());
 
             // Initialisation du serveur
             HttpServer server = new HttpServer(port, cheminFichierConf, cheminAccesLog, cheminErrorLog, ipAccepter, ipRejeter);
