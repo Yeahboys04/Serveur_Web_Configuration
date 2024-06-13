@@ -1,5 +1,4 @@
 import org.w3c.dom.Document;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
@@ -15,12 +14,12 @@ public class HttpServer {
     private GestionDesErrors error;
     private DemandeConnection demande;
 
-    public HttpServer(int port, String CheminVersConfig, String CheminEcritureLogAccess, String CHeminEcritureLogErrors, List<String> IpAccepter, List<String> IpRefuser) throws IOException {
+    public HttpServer(int port, String cheminVersConfig, String cheminEcritureLogAccess, String cheminEcritureLogErrors, List<String> ipAccepter, List<String> ipRefuser) throws IOException {
         this.serverSocket = new ServerSocket(port);
-        this.cheminVersConfig = CheminVersConfig;
-        this.access = new GestionDesAccess(CheminEcritureLogAccess);
-        this.error = new GestionDesErrors(CHeminEcritureLogErrors);
-        this.demande = new DemandeConnection(CheminVersConfig, IpAccepter, IpRefuser);
+        this.cheminVersConfig = cheminVersConfig;
+        this.access = new GestionDesAccess(cheminEcritureLogAccess);
+        this.error = new GestionDesErrors(cheminEcritureLogErrors);
+        this.demande = new DemandeConnection(cheminVersConfig, ipAccepter, ipRefuser);
     }
 
     public void start() {
@@ -36,7 +35,7 @@ public class HttpServer {
 
     public static void main(String[] args) {
         try {
-            // Chargement du fichier de config
+            // Chargement du fichier de configuration
             File xmlFile = new File("etc/myweb/myweb.conf");
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
@@ -48,15 +47,14 @@ public class HttpServer {
             String cheminFichierConf = doc.getElementsByTagName("root").item(0).getTextContent();
             String cheminAccesLog = doc.getElementsByTagName("accesslog").item(0).getTextContent();
             String cheminErrorLog = doc.getElementsByTagName("errorlog").item(0).getTextContent();
-            //La liste des Ip accepter et rejeter doit etre de la forme <accept>Ip,Ip,...</accept> dans le fichier conf
-            List<String> IpAccepter = Stream.of(doc.getElementsByTagName("accept").item(0).getTextContent().split(","))
+            // La liste des IP acceptées et rejetées
+            List<String> ipAccepter = Stream.of(doc.getElementsByTagName("accept").item(0).getTextContent().split(","))
                     .collect(Collectors.toList());
-            //Meme chose pour les rejeter
-            List<String> IpRejeter = Stream.of(doc.getElementsByTagName("reject").item(0).getTextContent().split(","))
+            List<String> ipRejeter = Stream.of(doc.getElementsByTagName("reject").item(0).getTextContent().split(","))
                     .collect(Collectors.toList());
 
             // Initialisation du serveur
-            HttpServer server = new HttpServer(port, cheminFichierConf, cheminAccesLog, cheminErrorLog, IpAccepter, IpRejeter);
+            HttpServer server = new HttpServer(port, cheminFichierConf, cheminAccesLog, cheminErrorLog, ipAccepter, ipRejeter);
             server.start();
         } catch (Exception e) {
             e.printStackTrace();
