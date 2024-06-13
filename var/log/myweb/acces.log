@@ -8,3 +8,12 @@ Requette: GET /siteweb.html HTTP/1.1
 Requette: GET / HTTP/1.1
 Requette: GET / HTTP/1.1
 Requette: GET /index.html HTTP/1.1
+Requette: GET /index.html HTTP/1.1
+Requette: GET /index.html HTTP/1.1
+Requette: GET /miniWeb.html HTTP/1.1
+Requette: GET /images/n2.jpg HTTP/1.1
+Requette: GET /technique.html HTTP/1.1
+Requette: GET /technique.html HTTP/1.1
+Requette: GET /index.html HTTP/1.1
+Requette: GET /miniWeb.html HTTP/1.1
+Requette: GET /images/n2.jpg HTTP/1.1
