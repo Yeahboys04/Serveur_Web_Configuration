@@ -81,6 +81,10 @@ public class HttpServer {
         List<String> ipRejeter = genererListIP(doc.getElementsByTagName("reject").item(0).getTextContent());
         if(serverSocket == null){
             this.serverSocket = new ServerSocket(port);
+        }else {
+            if(port != serverSocket.getLocalPort()){
+                this.serverSocket = new ServerSocket(port);
+            }
         }
         this.cheminVersConfig = cheminFichierConf;
         this.access = new GestionDesAccess(cheminAccesLog);
