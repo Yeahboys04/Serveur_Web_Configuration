@@ -1,0 +1,62 @@
+Noms : Aloïs Masson-Claudez, Benjamin Scheffer,Korban Ryan
+
+Bilan :
+
+Explication du Fonctionnement du Programme
+Le programme présenté est une implémentation d'un serveur HTTP basique en Java. Il est conçu pour gérer les connexions des clients, autoriser ou refuser ces connexions en fonction de certaines adresses IP spécifiées, et traiter les requêtes HTTP pour servir des fichiers depuis un chemin prédéfini. Voici une explication détaillée de son fonctionnement, couvrant sa structure, ses classes principales, ses interactions et ses algorithmes clés.
+
+Structure Générale
+Le programme se compose de plusieurs classes, chacune ayant des responsabilités spécifiques :
+
+HttpServer : Cette classe représente le serveur HTTP.
+    Elle est responsable de l'initialisation et du démarrage du serveur,
+    de l'acceptation des connexions clients et de la délégation de la gestion
+    des requêtes à une autre classe, DemandeConnection.
+DemandeConnection : Cette classe gère les connexions clients, vérifie les adresses IP pour
+    déterminer si elles sont acceptées ou refusées, et traite les requêtes HTTP.
+GestionDesAccess : Cette classe gère les journaux d'accès, enregistrant les informations
+    relatives aux connexions acceptées et aux requêtes traitées.
+GestionDesErrors : Cette classe gère les journaux d'erreurs, enregistrant les informations
+    relatives aux connexions refusées et aux erreurs survenues lors du traitement des requêtes.
+VerificateurAdresseIP : Cette classe utilitaire vérifie si une adresse IP donnée appartient  à un réseau spécifié.
+
+
+Fonctionnement Détaillé
+Initialisation et Démarrage du Serveur
+    Le programme commence par exécuter la méthode main de la classe HttpServer.
+    Cette méthode crée une instance de HttpServer et appelle la méthode init() pour
+    lire les configurations nécessaires depuis un fichier XML. Les configurations incluent
+    le port du serveur, les chemins des fichiers de journaux d'accès et d'erreurs, ainsi
+    que les listes des adresses IP acceptées et refusées. Ensuite, la méthode start() est
+    appelée pour démarrer le serveur et attendre les connexions des clients.
+
+Gestion des Connexions Clients
+    Une fois le serveur démarré, il écoute les connexions entrantes sur le port spécifié.
+    Lorsqu'un client se connecte, le serveur accepte la connexion, créant un objet Socket
+    pour le client. Ce Socket est ensuite passé à la méthode handleRequest de la classe
+    DemandeConnection pour gérer la requête du client.
+
+Vérification de l'Adresse IP
+La méthode handleRequest commence par vérifier l'adresse IP du client contre les listes des adresses IP acceptées et refusées. Cette vérification est effectuée à l'aide de la méthode estDansReseau de la classe VerificateurAdresseIP. Si l'adresse IP du client est dans la liste des adresses refusées, une entrée est ajoutée au journal d'erreurs via la classe GestionDesErrors, et la connexion est fermée. Si l'adresse IP est dans la liste des adresses acceptées, le serveur continue à traiter la requête HTTP.
+
+Traitement des Requêtes HTTP
+    La méthode handleRequest lit la requête HTTP du client et la décompose en différentes
+    parties (méthode, chemin, version) en utilisant la méthode separationRequete.
+    Si la requête est de type GET, le serveur tente de localiser le fichier demandé
+    dans le chemin d'accès configuré. Si le fichier existe et n'est pas un fichier binaire
+    (vérifié par la méthode estFichierBinaire), son contenu est lu et envoyé au client comme
+    réponse texte. Pour les fichiers binaires, le contenu est encodé en base64 et envoyé au
+    client.
+
+Journalisation
+    Toutes les connexions acceptées et les requêtes traitées sont enregistrées dans le fichier
+    de journal d'accès via la classe GestionDesAccess. De même, les connexions refusées et les
+    erreurs rencontrées lors du traitement des requêtes sont enregistrées dans le fichier de
+    journal d'erreurs via la classe GestionDesErrors.
+
+
+
+
+
+
+
