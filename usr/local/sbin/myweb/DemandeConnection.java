@@ -74,9 +74,9 @@ public class DemandeConnection {
                 String[] requestParts = separationRequete(requete);
                 if ("GET".equals(requestParts[0])) {
                     String cheminFichier = cheminDaccess + requestParts[1];
-                    if (cheminFichier.equals("var/www/status.html")) {
+                    if (cheminFichier.equals("/var/www/status.html")) {
                         ProcessBuilder processBuilder = new ProcessBuilder();
-                        processBuilder.command("bash", "-c", "./var/www/status.sh");
+                        processBuilder.command("bash", "-c", "/var/www/status.sh");
                         try {
                             Process process = processBuilder.start();
                             process.waitFor();
@@ -154,7 +154,7 @@ public class DemandeConnection {
                         image += ligne.charAt(i);
                     }
                 }
-                Path path = Paths.get("var/www/" + image);
+                Path path = Paths.get("/var/www/" + image);
                 String nouvelleImage = "";
                 if (Files.exists(path)) {
                     byte[] content = Files.readAllBytes(path);
@@ -182,12 +182,12 @@ public class DemandeConnection {
                 List<String> commande = new ArrayList<String>();
                 commande.add(interpreteur);
 
-                File tempFile = new File("var/fichier_script");
+                File tempFile = new File("/var/fichier_script");
                 try (FileWriter writer = new FileWriter(tempFile)) {
                     writer.write(code);
                 }
                 String chemin = tempFile.getAbsolutePath();
-                commande.add("var/fichier_script");
+                commande.add("/var/fichier_script");
                 processBuilder.command(commande);
                 try {
                     Process process = processBuilder.start();
