@@ -1,0 +1,55 @@
+@startuml
+
+class DemandeConnection {
+    - String cheminDaccess
+    - List<String> ipAccepter
+    - List<String> ipRefuser
+    + DemandeConnection(String chemin, List<String> acceptedIPs, List<String> rejectedIPs)
+    + void handleRequest(Socket clientSocket, GestionDesAccess access, GestionDesErrors erreurs) throws IOException
+    - String lireRequete(Socket clientSocket) throws IOException
+    - String[] separationRequete(String requete)
+    - boolean estFichierBinaire(String contentType)
+    - String envoyerReponseBase64(Socket clientSocket, String contentType, byte[] content) throws IOException
+    - void envoyerReponseTexte(Socket clientSocket, String contentType, String cheminFichier) throws IOException
+    - void envoyerBytes(Socket clientSocket, byte[] bytes) throws IOException
+}
+
+class GestionDesAccess {
+    - String accessLogPath
+    + GestionDesAccess(String accessLogPath)
+    + void logAccess(String message)
+}
+
+class GestionDesErrors {
+    - String errorLogPath
+    + GestionDesErrors(String errorLogPath)
+    + void logError(String message)
+}
+
+class HttpServer {
+    - ServerSocket serverSocket
+    - String cheminVersConfig
+    - GestionDesAccess access
+    - GestionDesErrors error
+    - DemandeConnection demande
+    + HttpServer()
+    + HttpServer(int port, String cheminVersConfig, String cheminEcritureLogAccess, String cheminEcritureLogErrors, List<String> ipAccepter, List<String> ipRefuser) throws IOException
+    + void start()
+    + static List<String> genererListIP(String a)
+    + static void main(String[] args)
+    + void init() throws IOException, SAXException, ParserConfigurationException
+}
+
+class VerificateurAdresseIP {
+    + static boolean estDansReseau(String adresseIP, String adresseReseau, int prefixe) throws UnknownHostException
+    - static byte[] appliquerMasque(byte[] adresse, byte[] masque)
+    - static byte[] creerMasque(int prefixe, int tailleBits)
+}
+
+DemandeConnection "1" --> "1" GestionDesAccess
+DemandeConnection "1" --> "1" GestionDesErrors
+HttpServer "1" --> "1" DemandeConnection
+HttpServer "1" --> "1" GestionDesAccess
+HttpServer "1" --> "1" GestionDesErrors
+
+@enduml
