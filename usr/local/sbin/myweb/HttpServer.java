@@ -8,9 +8,11 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+/**
+ * Classe HttpServer qui représente un serveur HTTP capable de gérer les connexions des clients,
+ * de lire une configuration XML et de traiter les requêtes HTTP.
+ */
 public class HttpServer {
     private ServerSocket serverSocket;
     private String cheminVersConfig;
@@ -18,8 +20,23 @@ public class HttpServer {
     private GestionDesErrors error;
     private DemandeConnection demande;
 
-    public HttpServer(){
+    /**
+     * Constructeur par défaut.
+     */
+    public HttpServer() {
     }
+
+    /**
+     * Constructeur pour initialiser le serveur avec les paramètres spécifiés.
+     *
+     * @param port Le port sur lequel le serveur écoute.
+     * @param cheminVersConfig Chemin vers le fichier de configuration.
+     * @param cheminEcritureLogAccess Chemin vers le fichier de journal d'accès.
+     * @param cheminEcritureLogErrors Chemin vers le fichier de journal des erreurs.
+     * @param ipAccepter Liste des adresses IP acceptées.
+     * @param ipRefuser Liste des adresses IP refusées.
+     * @throws IOException En cas d'erreur d'entrée/sortie.
+     */
     public HttpServer(int port, String cheminVersConfig, String cheminEcritureLogAccess, String cheminEcritureLogErrors, List<String> ipAccepter, List<String> ipRefuser) throws IOException {
         this.serverSocket = new ServerSocket(port);
         this.cheminVersConfig = cheminVersConfig;
@@ -28,6 +45,9 @@ public class HttpServer {
         this.demande = new DemandeConnection(cheminVersConfig, ipAccepter, ipRefuser);
     }
 
+    /**
+     * Méthode pour démarrer le serveur et accepter les connexions des clients.
+     */
     public void start() {
         while (true) {
             try {
@@ -44,15 +64,26 @@ public class HttpServer {
         }
     }
 
-    public static List<String> genererListIP(String a){
-        String [] r = a.split(",");
-        List<String> s = new ArrayList<String>();
-        for(int i = 0 ;i<r.length;i++){
-               s.add(r[i]);
-         }
+    /**
+     * Génère une liste d'adresses IP à partir d'une chaîne de caractères.
+     *
+     * @param a La chaîne de caractères contenant les adresses IP séparées par des virgules.
+     * @return La liste des adresses IP.
+     */
+    public static List<String> genererListIP(String a) {
+        String[] r = a.split(",");
+        List<String> s = new ArrayList<>();
+        for (String value : r) {
+            s.add(value);
+        }
         return s;
     }
 
+    /**
+     * Méthode principale pour lancer le serveur.
+     *
+     * @param args Arguments de la ligne de commande.
+     */
     public static void main(String[] args) {
         try {
             // Chargement du fichier de configuration
@@ -64,6 +95,13 @@ public class HttpServer {
         }
     }
 
+    /**
+     * Initialise le serveur en lisant les valeurs de configuration à partir d'un fichier XML.
+     *
+     * @throws IOException En cas d'erreur d'entrée/sortie.
+     * @throws SAXException En cas d'erreur de parsing XML.
+     * @throws ParserConfigurationException En cas d'erreur de configuration du parser.
+     */
     private void init() throws IOException, SAXException, ParserConfigurationException {
         File xmlFile = new File("etc/myweb/myweb.conf");
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -79,10 +117,12 @@ public class HttpServer {
         // La liste des IP acceptées et rejetées
         List<String> ipAccepter = genererListIP(doc.getElementsByTagName("accept").item(0).getTextContent());
         List<String> ipRejeter = genererListIP(doc.getElementsByTagName("reject").item(0).getTextContent());
-        if(serverSocket == null){
+
+        // Initialiser le serveur socket si ce n'est pas déjà fait
+        if (serverSocket == null) {
             this.serverSocket = new ServerSocket(port);
-        }else {
-            if(port != serverSocket.getLocalPort()){
+        } else {
+            if (port != serverSocket.getLocalPort()) {
                 this.serverSocket = new ServerSocket(port);
             }
         }
