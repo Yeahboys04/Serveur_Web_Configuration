@@ -19,14 +19,6 @@ public class DemandeConnection {
     }
 
     public void handleRequest(Socket clientSocket, GestionDesAccess access, GestionDesErrors erreurs) throws IOException {
-        ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("bash", "-c", "./var/www/status.sh");
-        try {
-            Process process = processBuilder.start();
-            process.waitFor();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         try {
             // On récupère l'adresse IP du client
             String clientIP = clientSocket.getInetAddress().getHostAddress();
@@ -70,13 +62,22 @@ public class DemandeConnection {
                 String[] requestParts = separationRequete(requete);
                 if ("GET".equals(requestParts[0])) {
                     String cheminFichier = cheminDaccess + requestParts[1];
+                    if (cheminFichier.equals("var/www/status.html")) {
+                        ProcessBuilder processBuilder = new ProcessBuilder();
+                        processBuilder.command("bash", "-c", "./var/www/status.sh");
+                        try {
+                            Process process = processBuilder.start();
+                            process.waitFor();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     if (requestParts[1].equals("/")) {
                         cheminFichier = cheminDaccess + "/index.html";
                     }
                     Path path = Paths.get(cheminFichier);
                     System.out.println(cheminFichier);
                     if (Files.exists(path)) {
-                        byte[] content = Files.readAllBytes(path);
                         String contentType = Files.probeContentType(path);
                         if (contentType == null) {
                             contentType = "text/html";
@@ -131,8 +132,6 @@ public class DemandeConnection {
         String ligne = fichier.readLine();
         String codeHtml = "";
         while (ligne != null) {
-
-            System.out.println(ligne);
             if (ligne.contains("<img")) {
                 boolean debutAttribut = false;
                 String image = "";
@@ -151,6 +150,7 @@ public class DemandeConnection {
                 }
                 ligne = ligne.replace(image, nouvelleImage);
                 codeHtml += ligne;
+                System.out.println(codeHtml);
             } else if (ligne.contains("<code")) {
                 boolean debutInterpreteur = false;
                 String interpreteur = "";
@@ -199,14 +199,14 @@ public class DemandeConnection {
             }
             ligne = fichier.readLine();
         }
+        System.out.println(codeHtml);
         fichier.close();
-        Path path = Paths.get(cheminFichier);
-        byte[] content = Files.readAllBytes(path);
+        byte[] content = codeHtml.getBytes();
         String responseHeaders = "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: " + contentType + "\r\n" +
                 "Content-Length: " + content.length + "\r\n\r\n";
         envoyerBytes(clientSocket, responseHeaders.getBytes());
-        envoyerBytes(clientSocket, codeHtml.getBytes());
+        envoyerBytes(clientSocket, content);
     }
 
     private void envoyerBytes(Socket clientSocket, byte[] bytes) throws IOException {
