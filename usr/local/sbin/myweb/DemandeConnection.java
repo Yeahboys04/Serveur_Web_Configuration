@@ -150,7 +150,6 @@ public class DemandeConnection {
                 }
                 ligne = ligne.replace(image, nouvelleImage);
                 codeHtml += ligne;
-                System.out.println(codeHtml);
             } else if (ligne.contains("<code")) {
                 boolean debutInterpreteur = false;
                 String interpreteur = "";
@@ -161,15 +160,23 @@ public class DemandeConnection {
                         interpreteur += ligne.charAt(i);
                     }
                 }
-                String code = "\"";
+                String code = "";
                 ligne = fichier.readLine();
                 while (!ligne.contains("</code>")) {
                     code += ligne;
                     ligne = fichier.readLine();
                 }
-                code += "\"";
                 ProcessBuilder processBuilder = new ProcessBuilder();
-                processBuilder.command(interpreteur, "-c", code);
+                List<String> commande = new ArrayList<String>();
+                commande.add(interpreteur);
+
+                File tempFile = new File("var/fichier_script");
+                try (FileWriter writer = new FileWriter(tempFile)) {
+                    writer.write(code);
+                }
+                String chemin = tempFile.getAbsolutePath();
+                commande.add("var/fichier_script");
+                processBuilder.command(commande);
                 try {
                     Process process = processBuilder.start();
                     process.waitFor();
@@ -187,19 +194,18 @@ public class DemandeConnection {
                     int exitVal = process.waitFor();
                     if (exitVal == 0) {
                         codeHtml += output + " ";
-                        System.out.println("output : " + output);
                     } else {
                         System.out.println("échec");
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                tempFile.delete();
             } else {
                 codeHtml += ligne + " ";
             }
             ligne = fichier.readLine();
         }
-        System.out.println(codeHtml);
         fichier.close();
         byte[] content = codeHtml.getBytes();
         String responseHeaders = "HTTP/1.1 200 OK\r\n" +
