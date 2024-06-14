@@ -1,0 +1,51 @@
+@startuml
+actor User
+
+User -> HttpServer : main(String[] args)
+activate HttpServer
+
+HttpServer -> HttpServer : init()
+activate HttpServer
+HttpServer -> HttpServer : genererListIP(String)
+activate HttpServer
+HttpServer --> HttpServer : List<String>
+deactivate HttpServer
+HttpServer -> HttpServer : new ServerSocket(port)
+activate HttpServer
+HttpServer --> HttpServer : ServerSocket
+deactivate HttpServer
+HttpServer -> GestionDesAccess : new GestionDesAccess(String)
+activate GestionDesAccess
+GestionDesAccess --> HttpServer : GestionDesAccess
+deactivate GestionDesAccess
+HttpServer -> GestionDesErrors : new GestionDesErrors(String)
+activate GestionDesErrors
+GestionDesErrors --> HttpServer : GestionDesErrors
+deactivate GestionDesErrors
+HttpServer -> DemandeConnection : new DemandeConnection(String, List<String>, List<String>)
+activate DemandeConnection
+DemandeConnection --> HttpServer : DemandeConnection
+deactivate DemandeConnection
+HttpServer --> HttpServer
+deactivate HttpServer
+
+
+HttpServer -> HttpServer : start()
+activate HttpServer
+
+HttpServer -> ServerSocket : accept()
+activate ServerSocket
+ServerSocket -> HttpServer : Socket clientSocket
+deactivate ServerSocket
+
+HttpServer -> DemandeConnection : handleRequest(clientSocket, access, error)
+activate DemandeConnection
+DemandeConnection --> HttpServer
+deactivate DemandeConnection
+HttpServer --> HttpServer
+deactivate HttpServer
+
+
+HttpServer--> User
+deactivate HttpServer
+@enduml

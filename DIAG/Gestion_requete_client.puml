@@ -1,0 +1,121 @@
+@startuml
+actor Client
+
+Client -> HttpServer : connect()
+activate HttpServer
+
+HttpServer -> ServerSocket : accept()
+activate ServerSocket
+ServerSocket --> HttpServer : Socket clientSocket
+deactivate ServerSocket
+
+HttpServer -> DemandeConnection : handleRequest(clientSocket, access, error)
+activate DemandeConnection
+
+DemandeConnection -> Socket : getInetAddress()
+activate Socket
+Socket -> InetAddress : getHostAddress()
+activate InetAddress
+InetAddress --> Socket : String clientIP
+deactivate InetAddress
+Socket --> DemandeConnection : InetAddress
+deactivate Socket
+
+DemandeConnection -> VerificateurAdresseIP : estDansReseau(clientIP, adresseReseau, masque)
+activate VerificateurAdresseIP
+VerificateurAdresseIP --> DemandeConnection : boolean
+deactivate VerificateurAdresseIP
+
+alt IP refusée
+    DemandeConnection -> GestionDesErrors : logError(String)
+    activate GestionDesErrors
+    GestionDesErrors --> DemandeConnection : void
+    deactivate GestionDesErrors
+
+    DemandeConnection -> Socket : close()
+    activate Socket
+    Socket --> DemandeConnection
+    deactivate Socket
+    DemandeConnection --> HttpServer
+    deactivate DemandeConnection
+else IP acceptée
+
+    DemandeConnection -> DemandeConnection : lireRequete(clientSocket)
+    activate DemandeConnection
+    DemandeConnection -> Socket : getInputStream()
+    activate Socket
+    Socket -> InputStreamReader : readLine()
+    activate InputStreamReader
+    InputStreamReader --> Socket : line
+    deactivate InputStreamReader
+    Socket --> DemandeConnection : String requete
+    deactivate InputStreamReader
+    deactivate Socket
+
+
+    DemandeConnection -> DemandeConnection : separationRequete(String)
+    activate DemandeConnection
+    DemandeConnection --> DemandeConnection : String[] requestParts
+    deactivate DemandeConnection
+
+    alt GET request
+        DemandeConnection -> Files : exists(Paths.get(cheminFichier))
+        activate Files
+        Files --> DemandeConnection : boolean
+        deactivate Files
+
+        alt fichier trouvé
+            DemandeConnection -> Files : probeContentType(Paths.get(cheminFichier))
+            activate Files
+            Files --> DemandeConnection : String contentType
+            deactivate Files
+
+            alt contentType est binaire
+                DemandeConnection -> DemandeConnection : envoyerReponseBase64(clientSocket, contentType, content)
+                activate DemandeConnection
+                DemandeConnection -> Socket : getOutputStream()
+                activate Socket
+                Socket -> OutputStream : write(bytes)
+                activate OutputStream
+                OutputStream --> Socket
+                 deactivate OutputStream
+                Socket --> DemandeConnection : OutputSream
+
+                deactivate Socket
+                deactivate DemandeConnection
+            else contentType est texte
+                DemandeConnection -> DemandeConnection : envoyerReponseTexte(clientSocket, contentType, cheminFichier)
+                activate DemandeConnection
+                DemandeConnection -> Socket : getOutputStream()
+                activate Socket
+                Socket -> OutputStream : write(bytes)
+                activate OutputStream
+                OutputStream --> Socket
+                Socket --> DemandeConnection : OutputSream
+                deactivate OutputStream
+                deactivate Socket
+                deactivate DemandeConnection
+            end
+        else fichier non trouvé
+            DemandeConnection -> GestionDesErrors : logError(String)
+            activate GestionDesErrors
+            GestionDesErrors --> DemandeConnection : void
+            deactivate GestionDesErrors
+
+            DemandeConnection -> Socket : getOutputStream()
+            activate Socket
+            Socket -> OutputStream : write(bytes)
+            activate OutputStream
+            OutputStream --> Socket
+            deactivate OutputStream
+            Socket --> DemandeConnection : OutputSream
+            deactivate Socket
+        end
+    else autre type de requête
+        DemandeConnection -> HttpServer
+        deactivate DemandeConnection
+    end
+end
+
+deactivate HttpServer
+@enduml
