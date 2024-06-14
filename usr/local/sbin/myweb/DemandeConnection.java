@@ -27,11 +27,17 @@ public class DemandeConnection {
             int i= 0;
             while(!arret && i!=ipAccepter.size()){
                 String adresseReseau = ipAccepter.get(i).split("/")[0];
-                int masque = Integer.parseInt(ipAccepter.get(i).split("/")[1]);
-                if(VerificateurAdresseIP.estDansReseau(clientIP,adresseReseau,masque)){
-                    arret = true;
+                try{
+                    if(ipAccepter.get(i).split("/")[1]!=null){
+                        int masque = Integer.parseInt(ipAccepter.get(i).split("/")[1]);
+                        if(VerificateurAdresseIP.estDansReseau(clientIP,adresseReseau,masque)){
+                            arret = true;
+                        }
+                        i++;
+                    }
+                }catch (ArrayIndexOutOfBoundsException e){
+                    i++;
                 }
-                i++;
             }
             if (!arret) {
                 // Si c'est le cas, on écrit dans le fichier de log des erreurs
@@ -39,12 +45,18 @@ public class DemandeConnection {
                 int j = 0 ;
                 while(!stop && j!=ipRefuser.size()){
                     String adress = ipRefuser.get(j).split("/")[0];
-                    int masque = Integer.parseInt(ipRefuser.get(j).split("/")[1]);
-                    if(VerificateurAdresseIP.estDansReseau(clientIP,adress,masque)){
-                        erreurs.logError("Connexion refusée de l'IP : " + clientIP);
-                        stop = true;
+                    try{
+                        if(ipRefuser.get(j).split("/")[1]!=null) {
+                            int masque = Integer.parseInt(ipRefuser.get(j).split("/")[1]);
+                            if (VerificateurAdresseIP.estDansReseau(clientIP, adress, masque)) {
+                                erreurs.logError("Connexion refusée de l'IP : " + clientIP);
+                                stop = true;
+                            }
+                            j++;
+                        }
+                    }catch (ArrayIndexOutOfBoundsException e){
+                        j++;
                     }
-                    j++;
                 }
                 if(!stop){
                     erreurs.logError("Connexion non accepté : " + clientIP);

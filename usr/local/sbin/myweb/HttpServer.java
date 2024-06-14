@@ -1,6 +1,9 @@
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -15,6 +18,8 @@ public class HttpServer {
     private GestionDesErrors error;
     private DemandeConnection demande;
 
+    public HttpServer(){
+    }
     public HttpServer(int port, String cheminVersConfig, String cheminEcritureLogAccess, String cheminEcritureLogErrors, List<String> ipAccepter, List<String> ipRefuser) throws IOException {
         this.serverSocket = new ServerSocket(port);
         this.cheminVersConfig = cheminVersConfig;
@@ -28,8 +33,13 @@ public class HttpServer {
             try {
                 Socket clientSocket = serverSocket.accept();
                 demande.handleRequest(clientSocket, access, error);
+                this.init();
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (ParserConfigurationException e) {
+                throw new RuntimeException(e);
+            } catch (SAXException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -46,26 +56,39 @@ public class HttpServer {
     public static void main(String[] args) {
         try {
             // Chargement du fichier de configuration
-            File xmlFile = new File("etc/myweb/myweb.conf");
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
-
-            // Lire les valeurs de configuration
-            int port = Integer.parseInt(doc.getElementsByTagName("port").item(0).getTextContent());
-            String cheminFichierConf = doc.getElementsByTagName("root").item(0).getTextContent();
-            String cheminAccesLog = doc.getElementsByTagName("accesslog").item(0).getTextContent();
-            String cheminErrorLog = doc.getElementsByTagName("errorlog").item(0).getTextContent();
-            // La liste des IP acceptées et rejetées
-            List<String> ipAccepter = genererListIP(doc.getElementsByTagName("accept").item(0).getTextContent());
-            List<String> ipRejeter = genererListIP(doc.getElementsByTagName("reject").item(0).getTextContent());
-
-            // Initialisation du serveur
-            HttpServer server = new HttpServer(port, cheminFichierConf, cheminAccesLog, cheminErrorLog, ipAccepter, ipRejeter);
-            server.start();
+            HttpServer serveur = new HttpServer();
+            serveur.init();
+            serveur.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void init() throws IOException, SAXException, ParserConfigurationException {
+        File xmlFile = new File("etc/myweb/myweb.conf");
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(xmlFile);
+        doc.getDocumentElement().normalize();
+
+        // Lire les valeurs de configuration
+        int port = Integer.parseInt(doc.getElementsByTagName("port").item(0).getTextContent());
+        String cheminFichierConf = doc.getElementsByTagName("root").item(0).getTextContent();
+        String cheminAccesLog = doc.getElementsByTagName("accesslog").item(0).getTextContent();
+        String cheminErrorLog = doc.getElementsByTagName("errorlog").item(0).getTextContent();
+        // La liste des IP acceptées et rejetées
+        List<String> ipAccepter = genererListIP(doc.getElementsByTagName("accept").item(0).getTextContent());
+        List<String> ipRejeter = genererListIP(doc.getElementsByTagName("reject").item(0).getTextContent());
+        if(serverSocket == null){
+            this.serverSocket = new ServerSocket(port);
+        }else {
+            if(port != serverSocket.getLocalPort()){
+                this.serverSocket = new ServerSocket(port);
+            }
+        }
+        this.cheminVersConfig = cheminFichierConf;
+        this.access = new GestionDesAccess(cheminAccesLog);
+        this.error = new GestionDesErrors(cheminErrorLog);
+        this.demande = new DemandeConnection(cheminFichierConf, ipAccepter, ipRejeter);
     }
 }
