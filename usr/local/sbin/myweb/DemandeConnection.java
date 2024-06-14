@@ -1,15 +1,9 @@
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -80,6 +74,7 @@ public class DemandeConnection {
                         cheminFichier = cheminDaccess + "/index.html";
                     }
                     Path path = Paths.get(cheminFichier);
+                    System.out.println(cheminFichier);
                     if (Files.exists(path)) {
                         byte[] content = Files.readAllBytes(path);
                         String contentType = Files.probeContentType(path);
@@ -87,11 +82,10 @@ public class DemandeConnection {
                             contentType = "text/html";
                         }
                         boolean isBase64 = estFichierBinaire(contentType);
-                        if (isBase64) {
-                            envoyerReponseBase64(clientSocket, contentType, content);
-                        } else {
+                        if (!isBase64) {
                             envoyerReponseTexte(clientSocket, contentType, cheminFichier);
                         }
+                  //      envoyerReponse(clientSocket, contentType, content, isBase64);
                     } else {
                         String messageErreur = "HTTP/1.1 404 Not Found\r\n\r\n";
                         envoyerBytes(clientSocket, messageErreur.getBytes());
@@ -121,17 +115,14 @@ public class DemandeConnection {
     }
 
     private boolean estFichierBinaire(String contentType) {
-        return contentType.startsWith("images/") || contentType.startsWith("audio/") || contentType.startsWith("videos/");
+        System.out.println(contentType);
+        return contentType.endsWith(".png") || contentType.endsWith("jpeg") || contentType.endsWith(".gif");
     }
 
-    private void envoyerReponseBase64(Socket clientSocket, String contentType, byte[] content) throws IOException {
+    private String envoyerReponseBase64(Socket clientSocket, String contentType, byte[] content) throws IOException {
         String base64Content = Base64.getEncoder().encodeToString(content);
-        String responseHeaders = "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: " + contentType + "\r\n" +
-                "Content-Encoding: base64\r\n" +
-                "Content-Length: " + base64Content.length() + "\r\n\r\n";
-        envoyerBytes(clientSocket, responseHeaders.getBytes());
-        envoyerBytes(clientSocket, base64Content.getBytes());
+        base64Content = "data:" + contentType + ";base64," + base64Content;
+        return base64Content;
     }
 
     private void envoyerReponseTexte(Socket clientSocket, String contentType, String cheminFichier) throws IOException {
@@ -140,7 +131,27 @@ public class DemandeConnection {
         String ligne = fichier.readLine();
         String codeHtml = "";
         while (ligne != null) {
-            if (ligne.contains("<code")) {
+
+            System.out.println(ligne);
+            if (ligne.contains("<img")) {
+                boolean debutAttribut = false;
+                String image = "";
+                for (int i = 0; i < ligne.length(); i++) {
+                    if (ligne.charAt(i) == '\"') {
+                        debutAttribut = !debutAttribut;
+                    } else if (debutAttribut) {
+                        image += ligne.charAt(i);
+                    }
+                }
+                Path path = Paths.get("var/www/" + image);
+                String nouvelleImage = "";
+                if (Files.exists(path)) {
+                    byte[] content = Files.readAllBytes(path);
+                    nouvelleImage = envoyerReponseBase64(clientSocket, contentType, content);
+                }
+                ligne = ligne.replace(image, nouvelleImage);
+                codeHtml += ligne;
+            } else if (ligne.contains("<code")) {
                 boolean debutInterpreteur = false;
                 String interpreteur = "";
                 for (int i = 0; i < ligne.length(); i++) {
